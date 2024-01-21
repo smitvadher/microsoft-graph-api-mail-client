@@ -1,32 +1,70 @@
-# Azure Http Function - Zip Blob Files
+# Graph API Mail Client App
 
-This Azure Function, named `ZipBlobFilesHttpFunction`, is designed to zip multiple blob files in a specified Azure Storage container. The function is triggered by an HTTP request and expects a JSON payload containing the paths of the files to be zipped.
+The **Graph API Mail Client App** is an automation library for .NET that facilitates interactions with Microsoft Graph API for email management. It enables developers to perform various email-related tasks, such as retrieving emails, marking emails as read, replying to emails, sending new emails, and deleting emails based on specified criteria.
 
-## Functionality
+## Getting Started
 
-- **Trigger:** The function is triggered by an HTTP POST request.
-- **Authorization:** The function requires Function-level authorization.
-- **Validation:** Input validation is performed using the `ModelValidation`, `StringArrayRequiredAttribute` classes.
-- **Logging:** The function logs information about the zipping process.
-- **Output:** The function returns a JSON object containing the path of the zipped file.
+Before using the Graph API Mail Client App, you need to register an application in the Azure portal and obtain the necessary credentials. Follow the steps below:
+
+### 1. Register Your Application
+
+1. Go to the [Azure portal](https://portal.azure.com/).
+2. Navigate to the **Azure Active Directory** section.
+3. Select **App registrations** and click on **New registration**.
+4. Provide a meaningful name for your application, choose the appropriate supported account types, and set the redirect URI if required.
+5. Click **Register** to create the application.
+
+### 2. Generate Client Secret
+
+1. In the application details page, go to the **Certificates & Secrets** tab.
+2. Under the **Client secrets** section, click **New client secret**.
+3. Enter a description, choose an expiration, and click **Add**. Ensure to copy and securely store the generated value, as it won't be visible again.
+
+### 3. Configure Permissions
+
+Assign the necessary permissions to your application based on the operations you intend to perform with the Graph API Mail Client App. Commonly required permissions include:
+
+- **Mail.Read**: Required for retrieving emails.
+- **Mail.ReadWrite**: Required for marking emails as read, replying to emails, and deleting emails.
+- **Mail.Send**: Required for sending new emails.
+- **Mail.ReadBasic.All**: Provides read access to a user's basic email. Note: Use cautiously due to broad access.
+
+Navigate to the application details page in the Azure portal, go to the **API permissions** tab, and add the required permissions.
+
+[NOTE](https://learn.microsoft.com/en-us/entra/identity-platform/scenario-daemon-acquire-token?source=recommendations&tabs=idweb#did-you-forget-to-provide-admin-consent-daemon-apps-need-it "Did you forget to provide admin consent? Daemon apps need it!"): If you get an Insufficient privileges to complete the operation error when you call the API, the tenant administrator needs to grant permissions to the application. For guidance on how to grant admin consent for your application, see step 4 in [Quickstart: Acquire a token and call Microsoft Graph in a .NET Core console app](https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-console-app-netcore-acquire-token#step-4-admin-consent).
 
 ## Configuration
 
-The following settings are expected to be configured:
+To use the Graph API Mail Client App, configure the `GraphApiConfig` class in the `appsettings.json` file. The configuration includes the following parameters:
 
-- `ConnectionString`: The connection string for the Azure Storage account.
-- `ContainerName`: The name of the Azure Storage container containing the files to be zipped.
+- **Instance**: The Azure AD instance URL, typically set to "https://login.microsoftonline.com/{0}".
+  
+- **ApiUrl**: The Graph API endpoint URL, defaulting to "https://graph.microsoft.com/".
 
-## Usage
+- **Tenant**: The tenant ID or domain name associated with the Azure AD tenant. It can also be set to 'organizations' for a multi-tenant application.
 
-To use this function, send an HTTP POST request with the required payload to the function's endpoint. The payload should be a JSON object, containing the `FilePaths` to be zipped.
+- **ClientId**: The unique identifier for the application in Azure AD.
 
-### Example Request:
+- **Authority**: The URL of the authority, constructed using the Instance and Tenant.
 
-```http
-POST https://<APP_NAME>.azurewebsites.net/api/ZipBlobFilesHttpFunction?code=<HOST_OR_MASTER_KEY>
-Content-Type: application/json
+- **ClientSecret**: The client secret (application password) used for authentication.
+
+- **ReadEmailsFrom**: The email ID or object ID of the email account from the Azure portal.
+
+For example:
+
+```json
 {
-  "FilePaths": ["path/to/file1.txt", "path/to/file2.txt"]
+  "GraphApiConfig": {
+    "Instance": "https://login.microsoftonline.com/{0}",
+    "ApiUrl": "https://graph.microsoft.com/",
+    "Tenant": "your-tenant-id",
+    "ClientId": "your-client-id",
+    "ClientSecret": "your-client-secret",
+    "ReadEmailsFrom": "readfrom@example.com"
+  }
 }
 ```
+
+## Usage
+See the `Program.cs` file for usage examples and integrate the Graph API Mail Client App into your .NET project for seamless email automation with Microsoft Graph API.
