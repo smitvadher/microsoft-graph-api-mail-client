@@ -1,6 +1,6 @@
 ﻿using GraphApiMailClientApp.Library.ApiService;
 using GraphApiMailClientApp.Library.Config;
-using GraphApiMailClientApp.Library.Email;
+using GraphApiMailClientApp.Library.Filters;
 using MailClientApp.Library.Email;
 using Microsoft.Extensions.Configuration;
 
@@ -17,8 +17,14 @@ configuration.GetSection(nameof(GraphApiConfig)).Bind(config);
 var emailService = new EmailService(config);
 
 // Example: Get all emails
-var searchFilter = new EmailSearchFilter();
-var emails = await emailService.GetEmailsAsync(searchFilter);
+var searchFilters = new List<SearchFilter>
+{
+    new SubjectStartsWithFilter("Test"),
+    new IsReadFilter(false),
+    new IsDraftFilter(false),
+    new LessThanCreateDateTimeFilter(DateTime.Now.AddDays(-1))
+};
+var emails = await emailService.GetEmailsAsync(searchFilters);
 Console.WriteLine($"Total Emails: {emails?.Count}");
 
 // Example: Mark an email as read
@@ -56,5 +62,5 @@ await emailService.SendAsync(newMessage, saveToSendItems: false);
 Console.WriteLine("Sent a new email.");
 
 // Example: Delete emails
-await emailService.DeleteEmailsAsync(searchFilter);
+await emailService.DeleteEmailsAsync(searchFilters);
 Console.WriteLine("Deleted emails based on filter criteria.");

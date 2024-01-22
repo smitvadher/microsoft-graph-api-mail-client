@@ -1,6 +1,6 @@
 ﻿using GraphApiMailClientApp.Library.Config;
-using GraphApiMailClientApp.Library.Email;
 using GraphApiMailClientApp.Library.Exceptions;
+using GraphApiMailClientApp.Library.Filters;
 using MailClientApp.Library.Email;
 using Microsoft.Identity.Client;
 
@@ -93,45 +93,21 @@ namespace GraphApiMailClientApp.Library.ApiService
         }
 
         /// <summary>
-        /// Constructs filter conditions based on the provided search filter for emails.
-        /// </summary>
-        private static string GetFilterConditions(EmailSearchFilter searchFilter)
-        {
-            var andConditions = new List<string>();
-
-            if (searchFilter != null)
-            {
-                if (!string.IsNullOrEmpty(searchFilter.SubjectStartsWith))
-                    andConditions.Add($"startsWith({nameof(Message.Subject)}, '{searchFilter.SubjectStartsWith}')");
-
-                if (searchFilter.IsRead.HasValue)
-                    andConditions.Add($"{nameof(Message.IsRead)} eq {searchFilter.IsRead.Value.ToString().ToLower()}");
-
-                if (searchFilter.LessThanCreateDateTime.HasValue)
-                    andConditions.Add($"{nameof(Message.CreatedDateTime)} lt {searchFilter.LessThanCreateDateTime.Value:yyyy-MM-ddTHH:mm:ssZ}");
-            }
-
-            andConditions.Add($"{nameof(Message.IsDraft)} eq false");
-
-            return string.Join(" and ", andConditions);
-        }
-
-        /// <summary>
         /// Constructs the URL for retrieving emails based on the provided search filter and selected properties.
         /// </summary>
-        private string GetEmailsUrl(EmailSearchFilter searchFilter, params string[] propertiesToSelect)
+        private string GetEmailsUrl(IEnumerable<SearchFilter> searchFilters, params string[] propertiesToSelect)
         {
             var url = _graphApiConfig.MessagesAbsoluteUrl;
             url += $"?$select={string.Join(",", propertiesToSelect)}";
             url += $"&$top={999999}";
-            url += $"&$filter={GetFilterConditions(searchFilter)}";
+            url += $"&$filter={SearchFilter.GetConditions(searchFilters)}";
 
             return url;
         }
 
-        private string GetEmailsUrl(EmailSearchFilter searchFilter)
+        private string GetEmailsUrl(IEnumerable<SearchFilter> searchFilters)
         {
-            return GetEmailsUrl(searchFilter, Message.GraphApiMessageProps.ToArray());
+            return GetEmailsUrl(searchFilters, Message.GraphApiMessageProps.ToArray());
         }
 
         private string GetReplyUrl(Message originalMessage, bool replyAll)
@@ -171,11 +147,11 @@ namespace GraphApiMailClientApp.Library.ApiService
         /// Requires one of the following permissions: [Mail.ReadBasic.All, Mail.Read, Mail.ReadWrite].
         /// For more information, refer to the <see href="https://docs.microsoft.com/en-us/graph/permissions-reference#mail-permissions"/>
         /// </remarks>
-        public async Task<IList<Message>> GetEmailsAsync(EmailSearchFilter searchFilter)
+        public async Task<IList<Message>> GetEmailsAsync(IEnumerable<SearchFilter> searchFilters)
         {
             var tokenResponse = await AcquireAccessTokenAsync();
 
-            var emails = await ApiRequestHelper.GetAsync<OdataResponse<Message>>(GetEmailsUrl(searchFilter), tokenResponse?.AccessToken);
+            var emails = await ApiRequestHelper.GetAsync<OdataResponse<Message>>(GetEmailsUrl(searchFilters), tokenResponse?.AccessToken);
 
             return emails?.Value;
         }
@@ -235,10 +211,10 @@ namespace GraphApiMailClientApp.Library.ApiService
         /// Requires one of the following permissions: [Mail.ReadWrite].
         /// For more information, refer to the <see href="https://docs.microsoft.com/en-us/graph/permissions-reference#mail-permissions"/>
         /// </remarks>
-        public async Task DeleteEmailsAsync(EmailSearchFilter searchFilter)
+        public async Task DeleteEmailsAsync(IEnumerable<SearchFilter> searchFilters)
         {
             var tokenResponse = await AcquireAccessTokenAsync();
-            var url = GetEmailsUrl(searchFilter, nameof(Message.Id));
+            var url = GetEmailsUrl(searchFilters, nameof(Message.Id));
             var messageToDelete = await ApiRequestHelper.GetAsync<OdataResponse<Message>>(url, tokenResponse?.AccessToken);
 
             if (messageToDelete == null || !messageToDelete.Value.Any()) return;
