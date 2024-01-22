@@ -53,7 +53,7 @@
                 return null;
 
             return FormatComparer
-                ? string.Format(StartsWithComparer, PropertySelector, Value)
+                ? string.Format(Comparer, PropertySelector, Value)
                 : $"{PropertySelector} {Comparer} {Value}";
         }
 
